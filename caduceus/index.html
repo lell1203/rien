@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지령 단말기 카두케우스</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #06060f;
+    color: #cce0ff;
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* 배경 격자 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(40,80,180,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(40,80,180,0.07) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .screen {
+    display: none;
+    width: 420px;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── 메인 화면 ── */
+  .main-panel {
+    background: #0c0c22;
+    border: 1px solid #2244aa;
+    border-radius: 4px;
+    padding: 28px 24px;
+    text-align: center;
+    position: relative;
+  }
+
+  .main-panel::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 30px; right: 30px; height: 2px;
+    background: linear-gradient(90deg, transparent, #4488ff, transparent);
+  }
+
+  .subtitle {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: #4466aa;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #88bbff;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .main-img {
+    width: 240px;
+    height: auto;
+    margin: 0 auto 20px;
+    display: block;
+    filter: drop-shadow(0 0 12px rgba(80,140,255,0.4));
+  }
+
+  .divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #2244aa, transparent);
+    margin: 16px 0;
+  }
+
+  .prob-info {
+    font-size: 10px;
+    color: #334466;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #0e0e2a;
+    border: 1px solid #2244aa;
+    border-radius: 3px;
+    color: #aaccff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(80,140,255,0.08), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+  }
+
+  .btn:hover {
+    background: #141436;
+    border-color: #4488ff;
+    color: #ddeeff;
+  }
+  .btn:hover::after { transform: translateX(100%); }
+  .btn:active { transform: scale(0.98); }
+
+  /* ── 뽑기 연출 ── */
+  .loading-panel {
+    background: #0c0c22;
+    border: 1px solid #2244aa;
+    border-radius: 4px;
+    padding: 60px 24px;
+    text-align: center;
+  }
+
+  .loading-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #4488ff;
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+  }
+
+  .bar-track {
+    background: #0a0a1e;
+    border: 1px solid #1a2a66;
+    border-radius: 2px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1a44bb, #4488ff);
+    width: 0%;
+    transition: width 0.08s linear;
+    box-shadow: 0 0 8px #4488ff88;
+  }
+
+  /* ── 결과 화면 ── */
+  .result-panel {
+    background: #0c0c22;
+    border: 1px solid #2244aa;
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .result-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: #88bbff;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+  }
+
+  /* 1회 결과 */
+  .single-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0;
+  }
+
+  .single-result img {
+    width: 100px;
+    height: 100px;
+    filter: drop-shadow(0 0 16px rgba(80,140,255,0.5));
+    animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .single-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  /* 10회 결과 그리드 */
+  .grid-result {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 8px 0;
+  }
+
+  .grid-cell {
+    background: #0a0a1e;
+    border: 1px solid #1a2a55;
+    border-radius: 3px;
+    padding: 6px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  .grid-cell img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .grid-name {
+    font-size: 9px;
+    color: #8899bb;
+    letter-spacing: 0.5px;
+  }
+
+  .rare { border-color: #aa8800 !important; }
+  .rare .grid-name, .rare-name { color: #ffdd44 !important; }
+
+  .scythe-notice {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffdd44;
+    letter-spacing: 2px;
+    padding: 8px 0;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn-row .btn { margin-bottom: 0; }
+</style>
+</head>
+<body>
+
+<!-- ── 메인 화면 ── -->
+<div id="screen-main" class="screen active">
+  <div class="main-panel">
+    <div class="subtitle">지령 단말기</div>
+    <div class="title">카두케우스</div>
+    <img class="main-img"
+         src="00UUU49x5qd2GtOLDXsGf0nxsh5vQ1Rc617j6VSAth8BlUv-ajZlIsAji0O5XR0YE2gURJPmoHy0fabHBfkikw.webp"
+         alt="카두케우스">
+    <hr class="divider">
+    <div class="prob-info">★ 낫 획득 확률 5% &nbsp;|&nbsp; 나머지 무기 각 11.875%</div>
+    <button class="btn" onclick="startPull(1)">▶ &nbsp; 1회 뽑기</button>
+    <button class="btn" onclick="startPull(10)">▶▶ &nbsp; 10회 뽑기</button>
+  </div>
+</div>
+
+<!-- ── 뽑기 연출 ── -->
+<div id="screen-loading" class="screen">
+  <div class="loading-panel">
+    <div class="loading-text">뽑기 중 . . .</div>
+    <div class="bar-track">
+      <div class="bar-fill" id="bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 결과 화면 ── -->
+<div id="screen-result" class="screen">
+  <div class="result-panel">
+    <div class="result-title">획득 결과</div>
+    <hr class="divider">
+    <div id="result-content"></div>
+    <div id="scythe-notice" class="scythe-notice"></div>
+    <hr class="divider" style="margin-top:12px">
+    <div class="btn-row">
+      <button class="btn" id="btn-repull" onclick="repull()"></button>
+      <button class="btn" onclick="goMain()">◀ 메인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WEAPONS = [
+  { name: "낫",          file: "낫.webp",   prob: 5.000 },
+  { name: "채찍",        file: "채찍.webp",  prob: 11.875 },
+  { name: "랜스",        file: "랜스.webp",  prob: 11.875 },
+  { name: "대검",        file: "대검.webp",  prob: 11.875 },
+  { name: "망치",        file: "망치.webp",  prob: 11.875 },
+  { name: "레이피어",    file: "레이.webp",  prob: 11.875 },
+  { name: "바스타드 소드", file: "바스.webp", prob: 11.875 },
+  { name: "스틸레토",    file: "스틸.webp",  prob: 11.875 },
+  { name: "손도끼",      file: "도끼.webp",  prob: 11.875 },
+];
+
+let lastCount = 1;
+
+function pullOnce() {
+  const total = WEAPONS.reduce((s, w) => s + w.prob, 0);
+  let r = Math.random() * total;
+  for (const w of WEAPONS) {
+    r -= w.prob;
+    if (r <= 0) return w;
+  }
+  return WEAPONS[WEAPONS.length - 1];
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startPull(count) {
+  lastCount = count;
+  show('screen-loading');
+
+  const bar = document.getElementById('bar');
+  bar.style.width = '0%';
+
+  let pct = 0;
+  const interval = setInterval(() => {
+    pct += 12;
+    bar.style.width = Math.min(pct, 100) + '%';
+    if (pct >= 100) {
+      clearInterval(interval);
+      setTimeout(() => showResult(count), 120);
+    }
+  }, 60);
+}
+
+function showResult(count) {
+  const results = Array.from({ length: count }, pullOnce);
+  const content = document.getElementById('result-content');
+  const notice  = document.getElementById('scythe-notice');
+  const repullBtn = document.getElementById('btn-repull');
+
+  repullBtn.textContent = count === 1 ? '▶ 다시 1회' : '▶▶ 다시 10회';
+
+  const scytheCount = results.filter(w => w.name === '낫').length;
+  notice.textContent = scytheCount > 0 ? `✦ 낫 ${scytheCount}개 획득! ✦` : '';
+
+  if (count === 1) {
+    const w = results[0];
+    const isRare = w.name === '낫';
+    content.innerHTML = `
+      <div class="single-result">
+        <img src="${w.file}" alt="${w.name}">
+        <div class="single-name ${isRare ? 'rare-name' : ''}">${w.name}</div>
+      </div>`;
+  } else {
+    content.innerHTML = `<div class="grid-result">` +
+      results.map((w, i) => `
+        <div class="grid-cell ${w.name === '낫' ? 'rare' : ''}"
+             style="animation-delay:${i * 0.05}s">
+          <img src="${w.file}" alt="${w.name}">
+          <div class="grid-name">${w.name}</div>
+        </div>`).join('') +
+      `</div>`;
+  }
+
+  show('screen-result');
+}
+
+function repull()  { startPull(lastCount); }
+function goMain()  { show('screen-main'); }
+</script>
+</body>
+</html>
